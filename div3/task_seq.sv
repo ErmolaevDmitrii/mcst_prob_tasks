@@ -6,7 +6,7 @@ module div_by_3_checker(
     input       data_vld,
 
     output logic div_by_3,
-    output div_by_3_vld
+    output logic div_by_3_vld
 );
 
     enum logic[2:0] {
@@ -58,10 +58,15 @@ module div_by_3_checker(
         end
     end
 
-    always_ff @ (posedge clk)
+    //always_ff @ (posedge clk)
+    //begin
+    //    if (rst) div_by_3 <= 1'b0;
+    //    else if(new_state == END) div_by_3 <= state == MOD0;
+    //end
+
+    always_latch
     begin
-        if (rst) div_by_3 <= 1'b0;
-        else if(new_state == END) div_by_3 <= state == MOD0;
+        if(new_state == END) div_by_3 <= state == MOD0;
     end
 
 endmodule
@@ -124,7 +129,7 @@ module testbench;
         @ (posedge clk);
         # 1
 
-        rand_num = $urandom();
+        rand_num = $urandom(seed);
         data <= rand_num;
         data_valid <= 1'b1;
         @ (posedge clk);

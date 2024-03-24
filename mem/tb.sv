@@ -47,49 +47,49 @@ module testbench;
     initial
     begin
 
-    `ifdef __ICARUS__
+        `ifdef __ICARUS__
 
-        $dumpfile ("dump.vcd");
-        $dumpvars;
-    `endif
+            $dumpfile ("dump.vcd");
+            $dumpvars;
+        `endif
 
-    reset();
+        reset();
 
-    @ (posedge clk);
-    write <= 1'b1;
-
-    for(int unsigned i = 0; i < MEM_SIZE; i = i + 1)
-    begin
-        mem_expected[i] = $urandom(seed) & DATA_W'(32'hFFFFFFFF);
-        data_in <= mem_expected[i];
-        addr_w <= i;
         @ (posedge clk);
-    end
+        write <= 1'b1;
 
-    write <= 1'b0;
-    read  <= 1'b1;
-
-    for(int unsigned i = 0; i <= MEM_SIZE; i = i + 1)
-    begin
-        addr_r <= i;
-        @ (posedge clk);
-        if(i != 0)
+        for(int unsigned i = 0; i < MEM_SIZE; i = i + 1)
         begin
-            $display("%d %d", data_out, mem_expected[i - 1]);
+            mem_expected[i] = $urandom(seed) & DATA_W'(32'hFFFFFFFF);
+            data_in <= mem_expected[i];
+            addr_w <= i;
+            @ (posedge clk);
+        end
 
-            if(data_out != mem_expected[i - 1])
+        write <= 1'b0;
+        read  <= 1'b1;
+
+        for(int unsigned i = 0; i <= MEM_SIZE; i = i + 1)
+        begin
+            addr_r <= i;
+            @ (posedge clk);
+            if(i != 0)
             begin
-                $display("FAIL");
-                $finish;
+                $display("%d %d", data_out, mem_expected[i - 1]);
+
+                if(data_out != mem_expected[i - 1])
+                begin
+                    $display("FAIL");
+                    $finish;
+                end
             end
         end
-    end
 
-    read <= 1'b0;
-    @ (posedge clk);
+        read <= 1'b0;
+        @ (posedge clk);
 
-    $display ("PASS");
-    $finish;
+        $display ("PASS");
+        $finish;
     end
 
 endmodule
