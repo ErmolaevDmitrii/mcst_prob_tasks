@@ -1,8 +1,12 @@
-module div_by_3_checker(
+module div_by_3_checker
+#(
+    parameter DATA_W = 8
+)
+(
     input clk,
     input rst,
 
-    input [7:0] data,
+    input [DATA_W - 1:0] data,
     input       data_vld,
 
     output logic div_by_3,
@@ -17,8 +21,8 @@ module div_by_3_checker(
         END
     } state, new_state;
 
-    logic[7:0] loaded_data;
-    wire current_bit = loaded_data[7];
+    logic[DATA_W - 1:0] loaded_data;
+    wire current_bit = loaded_data[DATA_W - 1];
     assign div_by_3_vld = new_state == IDLE;
 
     always_comb
@@ -28,13 +32,13 @@ module div_by_3_checker(
         case (state)
             IDLE: if(data_vld)            new_state = MOD0;
                   else                    new_state = IDLE;
-            MOD0: if(loaded_data == 8'd0) new_state = END;
+            MOD0: if(loaded_data == DATA_W'(0)) new_state = END;
                   else if(current_bit)    new_state = MOD1;
                   else                    new_state = MOD0;
-            MOD1: if(loaded_data == 8'd0) new_state = END;
+            MOD1: if(loaded_data == DATA_W'(0)) new_state = END;
                   else if(current_bit)    new_state = MOD0;
                   else                    new_state = MOD2;
-            MOD2: if(loaded_data == 8'd0) new_state = END;
+            MOD2: if(loaded_data == DATA_W'(0)) new_state = END;
                   else if(current_bit)    new_state = MOD2;
                   else                    new_state = MOD1;
             END:  new_state = IDLE;
@@ -46,35 +50,35 @@ module div_by_3_checker(
         if(rst)
         begin
             state <= IDLE;
-            loaded_data <= 8'd255;
+            loaded_data <= DATA_W'(1);
         end
         else
         begin
             if(state == IDLE & data_vld) loaded_data <= data;
-            else if(state == IDLE) loaded_data <= 8'd255;
+            else if(state == IDLE) loaded_data <= DATA_W'(1);
             else                   loaded_data <= loaded_data << 1;
 
             state <= new_state;
         end
     end
 
-    //always_ff @ (posedge clk)
-    //begin
-    //    if (rst) div_by_3 <= 1'b0;
-    //    else if(new_state == END) div_by_3 <= state == MOD0;
-    //end
-
-    always_latch
+    always_ff @ (posedge clk)
     begin
-        if(new_state == END) div_by_3 <= state == MOD0;
+        if (rst) div_by_3 <= 1'b0;
+        else if(new_state == END) div_by_3 <= state == MOD0;
     end
+
+    //always_latch
+    //begin
+    //    if(new_state == END) div_by_3 <= state == MOD0;
+    //end
 
 endmodule
 
 module testbench;
 
     int seed = 41;
-    byte unsigned rand_num;
+    int unsigned rand_num;
 
     logic clk;
 
@@ -95,13 +99,17 @@ module testbench;
         rst <= '0;
     endtask
 
-    logic [7:0] data;
+    localparam DATA_W = 16;
+
+    logic [DATA_W - 1:0] data;
     logic data_valid;
 
     logic divisibility;
     logic div_valid;
 
-    div_by_3_checker sd3(
+    div_by_3_checker # (
+        .DATA_W(DATA_W)
+    ) sd3 (
     .data(data),
     .data_vld(data_valid),
     .clk(clk),
@@ -129,7 +137,7 @@ module testbench;
         @ (posedge clk);
         # 1
 
-        rand_num = $urandom(seed);
+        rand_num = $urandom(seed) & DATA_W'(32'hFFFFFFFF);
         data <= rand_num;
         data_valid <= 1'b1;
         @ (posedge clk);
